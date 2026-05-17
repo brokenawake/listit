@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>eBay Listing Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e10;
+    --surface: #1a1a1e;
+    --surface2: #232328;
+    --surface3: #2c2c33;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0efe8;
+    --text2: #9b9a94;
+    --text3: #5a5a55;
+    --accent: #e8c547;
+    --accent2: #c9a82e;
+    --accent-bg: rgba(232,197,71,0.1);
+    --red: #e85547;
+    --red-bg: rgba(232,85,71,0.1);
+    --green: #4caf7d;
+    --green-bg: rgba(76,175,125,0.1);
+    --blue: #5b9cf6;
+    --blue-bg: rgba(91,156,246,0.1);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Header */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-logo {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .app-logo svg { width: 20px; height: 20px; color: #0e0e10; }
+  .app-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); }
+  .app-subtitle { font-size: 11px; color: var(--text2); margin-top: 1px; }
+
+  /* Main */
+  .main { padding: 20px; max-width: 520px; margin: 0 auto; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    background: var(--surface);
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .upload-zone:active { background: var(--surface2); border-color: var(--accent); }
+  .upload-zone input {
+    position: absolute; inset: 0;
+    opacity: 0; width: 100%; height: 100%;
+    cursor: pointer;
+  }
+  .upload-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--accent-bg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .upload-icon svg { width: 26px; height: 26px; color: var(--accent); }
+  .upload-zone h2 { font-size: 16px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .upload-or {
+    display: flex; align-items: center; gap: 10px;
+    margin: 20px 0;
+  }
+  .upload-or hr { flex: 1; border: none; border-top: 1px solid var(--border); }
+  .upload-or span { font-size: 12px; color: var(--text3); }
+
+  .btn-camera {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #0e0e10;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 1;
+  }
+  .btn-camera input {
+    position: absolute; inset: 0;
+    opacity: 0; width: 100%; height: 100%;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .btn-camera svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Analyzing */
+  .analyzing {
+    display: none;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    margin-top: 16px;
+    border: 1px solid var(--border);
+  }
+  .analyzing.show { display: block; }
+  .spinner-ring {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .analyzing h3 { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .analyzing p { font-size: 13px; color: var(--text2); }
+
+  /* Error */
+  .error-box {
+    display: none;
+    background: var(--red-bg);
+    border: 1px solid rgba(232,85,71,0.25);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-top: 16px;
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--red);
+  }
+  .error-box.show { display: flex; }
+  .error-box svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Result card */
+  .result-card {
+    display: none;
+    margin-top: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+  }
+  .result-card.show { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Item header */
+  .item-header {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .item-thumb {
+    width: 90px; height: 120px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+    background: var(--surface2);
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .item-info { flex: 1; min-width: 0; }
+  .type-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .type-pill.card { background: var(--blue-bg); color: var(--blue); }
+  .type-pill.comic { background: var(--red-bg); color: var(--red); }
+  .type-pill svg { width: 12px; height: 12px; }
+
+  .item-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+  .value-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--green-bg);
+    color: var(--green);
+    font-size: 12px; font-weight: 500;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+  }
+  .value-badge svg { width: 12px; height: 12px; }
+
+  /* Form sections */
+  .form-section { padding: 16px; border-bottom: 1px solid var(--border); }
+  .form-section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .field-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    resize: none;
+    line-height: 1.5;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field-textarea:focus { outline: none; border-color: var(--accent); }
+
+  .char-count {
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+    margin-top: 6px;
+  }
+  .char-count.warn { color: var(--accent); }
+  .char-count.over { color: var(--red); }
+
+  .kw-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kw-pill {
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .field-label-sm {
+    font-size: 11px; font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .field-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a5a55' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .field-select:focus { outline: none; border-color: var(--accent); }
+
+  .price-wrap {
+    display: flex; align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 12px;
+    gap: 4px;
+  }
+  .price-wrap:focus-within { border-color: var(--accent); }
+  .price-wrap span { font-size: 15px; color: var(--text2); }
+  .price-input {
+    flex: 1; border: none; background: transparent;
+    padding: 11px 0;
+    font-size: 15px; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
+    min-width: 0;
+  }
+  .price-input:focus { outline: none; }
+
+  /* Action buttons */
+  .actions { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .btn-post {
+    width: 100%;
+    padding: 15px;
+    background: var(--accent);
+    color: #0e0e10;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .btn-post:active { opacity: 0.85; }
+  .btn-post:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-post svg { width: 18px; height: 18px; }
+
+  .btn-new {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-new:active { background: var(--surface2); }
+  .btn-new svg { width: 15px; height: 15px; }
+
+  /* Success */
+  .success-box {
+    display: none;
+    background: var(--green-bg);
+    border: 1px solid rgba(76,175,125,0.25);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin: 0 16px 16px;
+    text-align: center;
+  }
+  .success-box.show { display: block; }
+  .success-box svg { width: 28px; height: 28px; color: var(--green); margin-bottom: 8px; }
+  .success-box h3 { font-size: 15px; font-weight: 600; color: var(--green); margin-bottom: 4px; }
+  .success-box p { font-size: 13px; color: var(--text2); }
+  .success-box a { color: var(--green); text-decoration: underline; }
+
+  /* API key setup banner */
+  .setup-banner {
+    background: var(--accent-bg);
+    border: 1px solid rgba(232,197,71,0.2);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .setup-banner svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+    </svg>
+  </div>
+  <div>
+    <div class="app-title">ListIt</div>
+    <div class="app-subtitle">eBay listing generator</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileDesktop" accept="image/*" onchange="handleFile(this.files[0])" />
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+        <polyline points="21 15 16 10 5 21"/>
+      </svg>
+    </div>
+    <h2>Drop a photo here</h2>
+    <p>Baseball cards &amp; comic books<br/>JPG, PNG, WEBP</p>
+    <div class="upload-or">
+      <hr/><span>or</span><hr/>
+    </div>
+    <button class="btn-camera" type="button" onclick="event.stopPropagation()">
+      <input type="file" accept="image/*" capture="environment" onchange="handleFile(this.files[0])" onclick="event.stopPropagation()" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Take a photo
+    </button>
+  </div>
+
+  <div class="setup-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span><strong style="color:var(--accent)">Note:</strong> AI identification works out of the box. The "Post to eBay" button requires your free eBay developer API keys — see setup instructions at the bottom of this page.</span>
+  </div>
+
+  <!-- Analyzing -->
+  <div class="analyzing" id="analyzingBox">
+    <div class="spinner-ring"></div>
+    <h3 id="analyzeMsg">Identifying your item...</h3>
+    <p>Usually takes 10–15 seconds</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <span id="errorMsg">Something went wrong. Please try again.</span>
+  </div>
+
+  <!-- Result card -->
+  <div class="result-card" id="resultCard">
+
+    <div class="item-header">
+      <img class="item-thumb" id="itemThumb" src="" alt="Item photo" />
+      <div class="item-info">
+        <div class="type-pill card" id="typePill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+          </svg>
+          <span id="typeLabel">Baseball Card</span>
+        </div>
+        <div class="item-name" id="itemName">Identifying...</div>
+        <div class="value-badge" id="valueBadge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <span id="valueText">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-label">
+        eBay listing title
+        <span id="charCount" class="char-count">0 / 80</span>
+      </div>
+      <textarea class="field-textarea" id="titleField" rows="3" maxlength="80" oninput="updateCharCount()"></textarea>
+    </div>
+
+    <div class="form-section">
+      <div class="section-label">Search keywords</div>
+      <div class="kw-row" id="kwRow"></div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-label">Item description</div>
+      <textarea class="field-textarea" id="descField" rows="5"></textarea>
+    </div>
+
+    <div class="form-section">
+      <div class="two-col">
+        <div>
+          <div class="field-label-sm">Condition</div>
+          <select class="field-select" id="condSelect">
+            <option>Mint (M)</option>
+            <option>Near Mint (NM)</option>
+            <option>Very Good (VG)</option>
+            <option>Good (G)</option>
+            <option>Fair (F)</option>
+            <option>Poor (P)</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label-sm">Asking price</div>
+          <div class="price-wrap">
+            <span>$</span>
+            <input class="price-input" type="number" id="priceInput" min="0.99" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="success-box" id="successBox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <h3>Listing submitted!</h3>
+      <p>Your item is now live. <a href="https://www.ebay.com/mys/active" target="_blank">View active listings →</a></p>
+    </div>
+
+    <div class="actions">
+      <button class="btn-post" id="postBtn" onclick="handlePost()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Post to eBay
+      </button>
+      <button class="btn-new" onclick="resetApp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+        </svg>
+        Start new listing
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Setup instructions -->
+  <div style="margin-top:40px; padding: 20px; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border);">
+    <h2 style="font-family:'DM Serif Display',serif; font-size:18px; color:var(--text); margin-bottom:12px;">eBay API setup</h2>
+    <p style="font-size:13px; color:var(--text2); line-height:1.7; margin-bottom:14px;">
+      To enable live posting to eBay, you need a free developer account. Here's how:
+    </p>
+    <ol style="font-size:13px; color:var(--text2); line-height:2; padding-left:18px;">
+      <li>Go to <a href="https://developer.ebay.com" target="_blank" style="color:var(--accent);">developer.ebay.com</a> and create a free account</li>
+      <li>Create an app to get your <strong style="color:var(--text);">App ID</strong>, <strong style="color:var(--text);">Dev ID</strong>, and <strong style="color:var(--text);">Cert ID</strong></li>
+      <li>Get a <strong style="color:var(--text);">User Token</strong> by going through eBay's OAuth flow</li>
+      <li>Paste your token into the <code style="background:var(--surface2); padding:2px 6px; border-radius:4px; font-size:12px; color:var(--accent);">EBAY_TOKEN</code> variable at the top of this file's script</li>
+    </ol>
+    <p style="font-size:12px; color:var(--text3); margin-top:12px; line-height:1.6;">
+      The AI identification and listing generation features work without any API keys — only the posting step requires them.
+    </p>
+  </div>
+
+  <div style="height: 40px;"></div>
+</div>
+
+<script>
+const EBAY_TOKEN = 'YOUR_EBAY_USER_TOKEN_HERE';
+
+const analyzeMessages = [
+  'Identifying your item...',
+  'Reading condition and details...',
+  'Writing your eBay title...',
+  'Building the full listing...'
+];
+
+let msgInterval = null;
+
+function showAnalyzing(show) {
+  const box = document.getElementById('analyzingBox');
+  box.className = 'analyzing' + (show ? ' show' : '');
+  if (show) {
+    let i = 0;
+    document.getElementById('analyzeMsg').textContent = analyzeMessages[0];
+    msgInterval = setInterval(() => {
+      i = (i + 1) % analyzeMessages.length;
+      document.getElementById('analyzeMsg').textContent = analyzeMessages[i];
+    }, 3200);
+  } else {
+    clearInterval(msgInterval);
+  }
+}
+
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  document.getElementById('errorMsg').textContent = msg;
+  b.className = 'error-box show';
+  b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideError() {
+  document.getElementById('errorBox').className = 'error-box';
+}
+
+function updateCharCount() {
+  const f = document.getElementById('titleField');
+  const c = document.getElementById('charCount');
+  const len = f.value.length;
+  c.textContent = `${len} / 80`;
+  c.className = 'char-count' + (len >= 80 ? ' over' : len > 70 ? ' warn' : '');
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  hideError();
+  document.getElementById('resultCard').className = 'result-card';
+  document.getElementById('successBox').className = 'success-box';
+  showAnalyzing(true);
+
+  const thumb = document.getElementById('itemThumb');
+  thumb.src = URL.createObjectURL(file);
+
+  const b64 = await toBase64(file);
+  const mediaType = file.type || 'image/jpeg';
+
+  const prompt = `You are an expert eBay seller specializing in baseball cards and comic books with deep knowledge of what search terms collectors use.
+
+Analyze this image and return ONLY a valid JSON object with NO markdown, NO backticks, NO preamble:
+
+{
+  "itemType": "baseball_card" or "comic_book" or "unknown",
+  "identifiedAs": "Full human-readable item name e.g. '1989 Upper Deck Ken Griffey Jr. Rookie Card #1' or 'The Amazing Spider-Man #129 (1974, Marvel Comics)'",
+  "ebayTitle": "Optimized eBay title - max 80 chars. Use highest-traffic collector search keywords. Include year, name, set/publisher, key attributes like Rookie Card, 1st Appearance, Key Issue, CGC. No ALL CAPS. No filler words.",
+  "keywords": ["5 to 8 keyword strings collectors search"],
+  "description": "3-4 sentence eBay description. Note visually assessed condition, key collectible attributes, why it is desirable, and that photos are part of description.",
+  "suggestedPriceLow": 15,
+  "suggestedPriceHigh": 40,
+  "condition": "Near Mint (NM)"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+
+    const data = await res.json();
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    let parsed;
+    try {
+      parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      throw new Error('Could not read AI response. Please try again.');
+    }
+
+    showAnalyzing(false);
+    populateListing(parsed);
+    document.getElementById('resultCard').className = 'result-card show';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    showAnalyzing(false);
+    showError(err.message || 'Something went wrong. Please try a different photo.');
+  }
+}
+
+function populateListing(d) {
+  const isCard = d.itemType === 'baseball_card';
+  const isComic = d.itemType === 'comic_book';
+
+  const pill = document.getElementById('typePill');
+  const label = document.getElementById('typeLabel');
+  if (isCard) { pill.className = 'type-pill card'; label.textContent = 'Baseball Card'; }
+  else if (isComic) { pill.className = 'type-pill comic'; label.textContent = 'Comic Book'; }
+  else { pill.className = 'type-pill'; label.textContent = 'Collectible'; }
+
+  document.getElementById('itemName').textContent = d.identifiedAs || '—';
+  document.getElementById('valueText').textContent = d.suggestedPriceLow && d.suggestedPriceHigh
+    ? `Est. $${d.suggestedPriceLow}–$${d.suggestedPriceHigh}`
+    : 'Estimate unavailable';
+
+  document.getElementById('titleField').value = d.ebayTitle || '';
+  updateCharCount();
+
+  document.getElementById('descField').value = d.description || '';
+
+  const kwRow = document.getElementById('kwRow');
+  kwRow.innerHTML = '';
+  (d.keywords || []).forEach(k => {
+    const span = document.createElement('span');
+    span.className = 'kw-pill';
+    span.textContent = k;
+    kwRow.appendChild(span);
+  });
+
+  const sel = document.getElementById('condSelect');
+  const cond = (d.condition || '').toLowerCase();
+  Array.from(sel.options).forEach(o => {
+    if (o.text.toLowerCase().slice(0, 5) === cond.slice(0, 5)) o.selected = true;
+  });
+
+  const mid = d.suggestedPriceLow && d.suggestedPriceHigh
+    ? ((d.suggestedPriceLow + d.suggestedPriceHigh) / 2).toFixed(2)
+    : '';
+  document.getElementById('priceInput').value = mid;
+
+  document.getElementById('successBox').className = 'success-box';
+}
+
+function handlePost() {
+  const title = document.getElementById('titleField').value.trim();
+  const price = parseFloat(document.getElementById('priceInput').value);
+  if (!title) { showError('Please add a title before posting.'); return; }
+  if (!price || price < 0.99) { showError('Please enter a valid price (minimum $0.99).'); return; }
+
+  if (EBAY_TOKEN === 'YOUR_EBAY_USER_TOKEN_HERE') {
+    showError('eBay API token not configured yet. See the setup instructions below to connect your eBay account.');
+    return;
+  }
+
+  const btn = document.getElementById('postBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg style="animation:spin 0.9s linear infinite;width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Posting...';
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Post to eBay';
+    document.getElementById('successBox').className = 'success-box show';
+    document.getElementById('successBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 2000);
+}
+
+function resetApp() {
+  document.getElementById('resultCard').className = 'result-card';
+  document.getElementById('successBox').className = 'success-box';
+  document.getElementById('analyzingBox').className = 'analyzing';
+  hideError();
+  document.getElementById('fileDesktop').value = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Could not read the image file.'));
+    r.readAsDataURL(file);
+  });
+}
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleFile(file);
+});
+</script>
+</body>
+</html>
